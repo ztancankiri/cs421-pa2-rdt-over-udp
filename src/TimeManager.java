@@ -3,34 +3,34 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TimeManager extends Thread {
 
+    private final int SLEEP_AMOUNT = 1; // 1 ms
+
     private AtomicBoolean isActive;
-    private ArrayList<Packet> timerList;
+    private ArrayList<Packet> packetList;
     private int timeoutLimit;
-    private final int SLEEP_AMOUNT = 1;
     private SendManager sendManager;
 
     public TimeManager(int timeoutLimit) {
         this.isActive = new AtomicBoolean(false);
-        this.timerList = new ArrayList<>();
+        this.packetList = new ArrayList<>();
         this.timeoutLimit = timeoutLimit;
     }
 
     @Override
     public synchronized void start() {
         super.start();
-        isActive.set(true);
+        setActive(true);
     }
 
     @Override
     public void run() {
         while (isActive.get()) {
-            for (int i = 0; i < timerList.size(); i++) {
-                timerList.get(i).increaseCounter();
+            for (int i = 0; i < packetList.size(); i++) {
+                packetList.get(i).increaseCounter();
 
-                if (timerList.get(i).isTimeout()) {
-                    int seqNo = timerList.get(i).sequenceNo;
-                    timerList.remove(i);
-                    sendManager.onTimeout(seqNo);
+                if (packetList.get(i).isTimeout()) {
+                    sendManager.onTimeout(packetList.remove(i));
+                    // .remove(index) returns the removed object.
                 }
             }
 
@@ -42,14 +42,14 @@ public class TimeManager extends Thread {
         }
     }
 
-    public void addTimer(int sequenceNo) {
-        timerList.add(new Packet(sequenceNo, timeoutLimit, 0, 0));
+    public void addPacket(int seqNo, int index, int length) {
+        packetList.add(new Packet(seqNo, timeoutLimit, index, length));
     }
 
     public void stopTimer(int sequenceNo) {
-        for (int i = 0; i < timerList.size(); i++) {
-            if (timerList.get(i).sequenceNo == sequenceNo) {
-                timerList.remove(i);
+        for (int i = 0; i < packetList.size(); i++) {
+            if (packetList.get(i).sequenceNo == sequenceNo) {
+                packetList.remove(i);
                 sendManager.ackPacket(sequenceNo);
             }
         }
@@ -59,4 +59,7 @@ public class TimeManager extends Thread {
         this.sendManager = sendManager;
     }
 
+    public void setActive(boolean value) {
+        this.isActive.set(value);
+    }
 }

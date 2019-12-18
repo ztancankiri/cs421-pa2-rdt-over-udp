@@ -28,39 +28,33 @@ public class SendManager extends Thread {
 
     @Override
     public void run() {
-        int counter = 1;
+
         while (isActive.get()) {
-            sendPacket(counter);
-            counter++;
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            // TODO: sendPacket(..) according to Sliding Window logic.
         }
     }
 
-    private void sendPacket(int seqNo) {
+    private void sendPacket(Packet packet) {
         try {
             byte[] data = new byte[1024];
 
-            data[0] = (byte) ((seqNo >> 8) & 0xff);
-            data[1] = (byte) (seqNo & 0xff);
+            // Header of the packet
+            data[0] = (byte) ((packet.sequenceNo >> 8) & 0xff);
+            data[1] = (byte) (packet.sequenceNo & 0xff);
 
-            for (int i = 0; i < 1022; i++) {
-                data[i + 2] = inputFileData[i];
+            for (int i = 0; i < packet.length; i++) {
+                data[i + 2] = inputFileData[packet.index + i];
             }
 
             socket.send(new DatagramPacket(data, data.length, InetAddress.getByName(hostname), port));
+            timeManager.addPacket(packet.sequenceNo, packet.index, packet.length);
         } catch (Exception e) {
             System.out.println("Exception: " + e.getMessage());
         }
-
-        // timeManager.addTimer(0);
     }
 
-    public void onTimeout(int sequenceNo) {
-        sendPacket(sequenceNo);
+    public void onTimeout(Packet packet) {
+        sendPacket(packet);
     }
 
     public void setActive(boolean value) {
@@ -71,7 +65,7 @@ public class SendManager extends Thread {
         this.timeManager = timeManager;
     }
 
-    public void ackPacket(int sequenceNo) {
-        // TODO: acknowledge that packet
+    public void ackPacket(int seqNo) {
+        // TODO: acknowledge that packet with Sliding Window logic
     }
 }
