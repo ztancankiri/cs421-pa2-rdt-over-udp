@@ -25,7 +25,7 @@ public class Main {
             DatagramSocket datagramSocket = new DatagramSocket();
 
             ReceiveManager receiveManager = new ReceiveManager(datagramSocket, HOSTNAME, port);
-            SendManager sendManager = new SendManager(fileData, datagramSocket, HOSTNAME, port);
+            SendManager sendManager = new SendManager(fileData, datagramSocket, HOSTNAME, port, N);
             TimeManager timeManager = new TimeManager(timeout);
 
             sendManager.setTimeManager(timeManager);
