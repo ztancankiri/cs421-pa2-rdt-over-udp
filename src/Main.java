@@ -1,9 +1,12 @@
 import java.io.IOException;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class Main {
     //java Sender <file_path> <receiver_port> <window_size_N> <retransmission_timeout>
+
+    private static final String HOSTNAME = "127.0.0.1";
 
     public static void main(String[] args) {
         String fp = args[0];
@@ -16,36 +19,24 @@ public class Main {
         System.out.println("N: " + N);
         System.out.println("Timeout: " + timeout);
 
-        byte[] fileData = null;
         try {
-            fileData = Files.readAllBytes(Paths.get(fp));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+            byte[] fileData = Files.readAllBytes(Paths.get(fp));
 
-        if (fileData != null) {
-            SendManager sendManager = new SendManager(fileData);
+            DatagramSocket datagramSocket = new DatagramSocket();
+
+            ReceiveManager receiveManager = new ReceiveManager(datagramSocket, HOSTNAME, port);
+            SendManager sendManager = new SendManager(fileData, datagramSocket, HOSTNAME, port);
             TimeManager timeManager = new TimeManager(timeout);
-            ReceiveManager receiveManager = new ReceiveManager();
 
             sendManager.setTimeManager(timeManager);
             timeManager.setSendManager(sendManager);
             receiveManager.setTimeManager(timeManager);
 
-//            timeManager.start();
-//            receiveManager.start();
-//            sendManager.start();
-        }
+            receiveManager.start();
+            sendManager.start();
 
-//        DatagramSocket datagramSocket = null;
-//
-//        try {
-//            datagramSocket = new DatagramSocket(port, InetAddress.getLocalHost());
-//            System.out.println("Connected");
-//        }
-//        catch (Exception e) {
-//            System.out.println("Exception: " + e.getMessage());
-//            System.exit(1);
-//        }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

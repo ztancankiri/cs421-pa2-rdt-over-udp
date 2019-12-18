@@ -61,7 +61,7 @@ while True:
     data_bytes = packet[HEADER_SIZE:PACKET_SIZE]
     
     # Uncomment this to print the received packet no and data size (before applying drop)
-    #print(packet_no, len(data_bytes))
+    print(packet_no, len(data_bytes))
     
     # Terminate program if packet_no is 0
     if packet_no == 0:
@@ -103,4 +103,3 @@ for packet_no in sorted(buf):
     
 with open(FILENAME, "wb") as f:
     f.write(buf_concat)
-    

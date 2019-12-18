@@ -1,0 +1,1 @@
+python receiver.py 6000 20 0 0

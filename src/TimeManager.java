@@ -6,7 +6,7 @@ public class TimeManager extends Thread {
     private AtomicBoolean isActive;
     private ArrayList<PacketTimer> timerList;
     private int timeoutLimit;
-    private final int SLEEP_AMOUNT = 0;
+    private final int SLEEP_AMOUNT = 1;
     private SendManager sendManager;
 
     public TimeManager(int timeoutLimit) {
