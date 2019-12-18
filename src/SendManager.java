@@ -28,33 +28,32 @@ public class SendManager extends Thread {
 
     @Override
     public void run() {
-
         while (isActive.get()) {
             // TODO: sendPacket(..) according to Sliding Window logic.
         }
     }
 
-    private void sendPacket(Packet packet) {
+    private void sendPacket(int seqNo, int index, int length) {
         try {
             byte[] data = new byte[1024];
 
             // Header of the packet
-            data[0] = (byte) ((packet.sequenceNo >> 8) & 0xff);
-            data[1] = (byte) (packet.sequenceNo & 0xff);
+            data[0] = (byte) ((seqNo >> 8) & 0xff);
+            data[1] = (byte) (seqNo & 0xff);
 
-            for (int i = 0; i < packet.length; i++) {
-                data[i + 2] = inputFileData[packet.index + i];
+            for (int i = 0; i < length; i++) {
+                data[i + 2] = inputFileData[index + i];
             }
 
             socket.send(new DatagramPacket(data, data.length, InetAddress.getByName(hostname), port));
-            timeManager.addPacket(packet.sequenceNo, packet.index, packet.length);
+            timeManager.addPacket(seqNo, index, length);
         } catch (Exception e) {
             System.out.println("Exception: " + e.getMessage());
         }
     }
 
     public void onTimeout(Packet packet) {
-        sendPacket(packet);
+        sendPacket(packet.sequenceNo, packet.index, packet.length);
     }
 
     public void setActive(boolean value) {
