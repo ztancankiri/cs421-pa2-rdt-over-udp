@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TimeManager extends Thread {
 
     private AtomicBoolean isActive;
-    private ArrayList<PacketTimer> timerList;
+    private ArrayList<Packet> timerList;
     private int timeoutLimit;
     private final int SLEEP_AMOUNT = 1;
     private SendManager sendManager;
@@ -43,7 +43,7 @@ public class TimeManager extends Thread {
     }
 
     public void addTimer(int sequenceNo) {
-        timerList.add(new PacketTimer(sequenceNo, timeoutLimit));
+        timerList.add(new Packet(sequenceNo, timeoutLimit, 0, 0));
     }
 
     public void stopTimer(int sequenceNo) {
@@ -59,24 +59,4 @@ public class TimeManager extends Thread {
         this.sendManager = sendManager;
     }
 
-    private class PacketTimer {
-
-        private int sequenceNo;
-        private int counter;
-        private int limit;
-
-        private PacketTimer(int sequenceNo, int limit) {
-            this.sequenceNo = sequenceNo;
-            this.limit = limit;
-            this.counter = 0;
-        }
-
-        private boolean isTimeout() {
-            return counter >= limit;
-        }
-
-        private void increaseCounter() {
-            counter++;
-        }
-    }
 }
