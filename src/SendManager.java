@@ -13,26 +13,23 @@ public class SendManager extends Thread {
     private int port;
     private int N;
     private int[] window;
-
-    // Benim TODO yazdığım yerler dışında bir methoda dokunmadan yapabiliyor olman lazımr global
-    // Class property si ekle canım onda bişi yok gerekiyorsa method da ekle ama benim yazdıgım methodlardan herhangi birinde
-    // TODO lar hariç bir yere dokunmana gerek yok. Şuaonk timeout yeme halidne retransmission vs mevcut.
-    // hiç düşünme oraları sen. sendPacket methoduna sadece bizima  şu inputFileData array i içerisindeki
-    // o an gönderilcek paketin başlangıc index ini ve lengthini vericen data kısmının bak yalnız. 1022 gibi. header ı da
-    // otomatik koyuyo şuan o method sen sadece headerı konacak seqNo yu vericen.
-    //Ok ne kadar sürem var. Ne bilem bir tek bu kaldı. Bu logic eklenince çalışması lazım her şeyin :D
-    // Bu arada proje böyle yapılır :D Farkındaysan metholar yazdım sen sadece signature kullanarak başka şeyler yapabilirsin.
-    // Bana ihtiyacın yok mesela :D Evet ama tüm yapıyı sen kurduğun için bir yerde patlıycam :D Olum ihtiyacın olan methodları söyledim işte
-    // onları kullanarak yapabilmen lazım :D Oki ben deniyim
-    // Tamam kolay gelsin aşko xd sağoll sanadaaa
+    private int windowPoint;
+    private int startIndex;
+    private AtomicBoolean isFull;
 
     public SendManager(byte[] inputFileData, DatagramSocket socket, String hostname, int port, int N) {
         this.isActive = new AtomicBoolean(false);
+        this.isFull = new AtomicBoolean(false);
         this.inputFileData = inputFileData;
         this.socket = socket;
         this.hostname = hostname;
         this.port = port;
         this.N = N;
+        this.window = new int[N];
+        for (int i = 0; i < N; i++)
+            window[i] = -2;
+        this.windowPoint = 0;
+        this.startIndex = 0;
     }
 
     @Override
@@ -43,10 +40,15 @@ public class SendManager extends Thread {
 
     @Override
     public void run() {
+        int index = 0;
         while (isActive.get()) {
-            // TODO: sendPacket(..) according to Sliding Window logic.
-            // Burası bu threadin infinite loop u. Burda window u doldurana kadar send yapıcan.
-            // window dolunca yer yoksa bişi yapmıcak. Yer acılınca yeni bişi yollucak.
+            if(!isFull.get()) {
+                for (int i = 0; i < N; i++){
+                    sendPacket(i, index++, inputFileData.length);
+                   // ackPacket(i); pozitif ack geldiğinde çağırılıcak
+                    //Burada neler dönüyor acaba ?
+                }
+            }
         }
     }
 
@@ -58,7 +60,7 @@ public class SendManager extends Thread {
             data[0] = (byte) ((seqNo >> 8) & 0xff);
             data[1] = (byte) (seqNo & 0xff);
 
-            for (int i = 0; i < length; i++) {
+            for(int i = 0; i < length; i++) {
                 data[i + 2] = inputFileData[index + i];
             }
 
@@ -82,9 +84,23 @@ public class SendManager extends Thread {
     }
 
     public void ackPacket(int seqNo) {
-        // TODO: acknowledge that packet with Sliding Window logic
+        if(windowPoint == N - 1 )
+        {
+            windowPoint = 0;
+        }
+        window[windowPoint] = seqNo;
+        windowPoint++;
+        for (int i = 0; i < N; i++)
+        {
+            if( window[i] == -2) {
+                startIndex = i; // first unacknowledgement number
+                break;
+            }
+        }
+        if(windowPoint == startIndex) {
+            System.out.println("FULL WİNDOW");
+            isFull.getAndSet(true);
+        }
     }
-    public void slidingWindow(int seqNo) {
-        // TODO: acknowledge that packet with Sliding Window logic
-    }
+
 }
