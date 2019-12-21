@@ -16,7 +16,10 @@ public class SendManager extends Thread {
     private int windowPoint;
     private int startIndex;
     private AtomicBoolean isFull;
-
+    private int seqNo;
+    private int totalLength;
+    private boolean firstCase;
+    int index = 0;
     public SendManager(byte[] inputFileData, DatagramSocket socket, String hostname, int port, int N) {
         this.isActive = new AtomicBoolean(false);
         this.isFull = new AtomicBoolean(false);
@@ -30,6 +33,9 @@ public class SendManager extends Thread {
             window[i] = -2;
         this.windowPoint = 0;
         this.startIndex = 0;
+        this.seqNo = 0;
+        firstCase = false;
+        this.totalLength = inputFileData.length;
     }
 
     @Override
@@ -40,15 +46,25 @@ public class SendManager extends Thread {
 
     @Override
     public void run() {
-        int index = 0;
+
         while (isActive.get()) {
+            //ACK geldiğini nasıl anlıyorum.Ona göre windowun boşalıp boşalmadığını check edicem.
             if(!isFull.get()) {
-                for (int i = 0; i < N; i++){
-                    sendPacket(i, index++, inputFileData.length);
-                   // ackPacket(i); pozitif ack geldiğinde çağırılıcak
-                    //Burada neler dönüyor acaba ?
+                seqNo++;
+                if(1024 <= totalLength ) {
+                    sendPacket(seqNo, index, 1024);
+                    ackPacket(seqNo);
+                    totalLength = totalLength - 1024 ;
+                    index = index + 1024;
+                    System.out.println("seqNo" + seqNo);
+                    System.out.println("index" + index);
+                }
+                else{
+                    sendPacket(seqNo, index + 1024, totalLength);
+                    ackPacket(seqNo);
                 }
             }
+
         }
     }
 
@@ -63,8 +79,9 @@ public class SendManager extends Thread {
             for(int i = 0; i < length; i++) {
                 data[i + 2] = inputFileData[index + i];
             }
-
+            System.out.println("seqNo" + seqNo);
             socket.send(new DatagramPacket(data, data.length, InetAddress.getByName(hostname), port));
+
             timeManager.addPacket(seqNo, index, length);
         } catch (Exception e) {
             System.out.println("Exception: " + e.getMessage());
@@ -94,10 +111,12 @@ public class SendManager extends Thread {
         {
             if( window[i] == -2) {
                 startIndex = i; // first unacknowledgement number
-                break;
+
             }
         }
-        if(windowPoint == startIndex) {
+        System.out.println(startIndex);
+        System.out.println(windowPoint);
+        if(windowPoint == startIndex ) {
             System.out.println("FULL WİNDOW");
             isFull.getAndSet(true);
         }

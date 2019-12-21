@@ -36,7 +36,7 @@ public class ReceiveManager extends Thread {
 
                 byte[] ackNoData = new byte[] { 0x00, 0x00, ackData[0], ackData[1] };
                 int ackNo = ByteBuffer.wrap(ackNoData).getInt();
-
+                System.out.println("ackNo" + ackNo);
                 stopTimer(ackNo);
             } catch (Exception e) {
                 e.printStackTrace();
