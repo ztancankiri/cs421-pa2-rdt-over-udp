@@ -23,12 +23,18 @@ public class Main {
 
     private int ackCounter;
 
+    private int nextSeqNo;
+    private int counter;
+
     public Main(String filePath, int port, int N, int timeout) {
         this.port = port;
         this.N = N;
         this.timeout = timeout;
         this.ackCounter = 0;
         this.lastAck = -1;
+
+        this.nextSeqNo = 1;
+        this.counter = 0;
 
         try {
             fileData = Files.readAllBytes(Paths.get(filePath));
@@ -55,7 +61,7 @@ public class Main {
             e.printStackTrace();
         }
 
-        sendWindow();
+        sendWindow(N);
 
         while (ackCounter < noOfPackets) {
             try {
@@ -84,31 +90,28 @@ public class Main {
                 packets[seqIndex] = null;
                 ackCounter++;
 
+                counter++;
+
                 if (seqIndex > lastAck)
                     lastAck = seqIndex;
 
-                int counter = 0;
-                for (int i = windowBase; i < lastAck; i++) {
-                    if (packets[i] == null) {
-                        counter++;
-                    }
-                }
-
-                if (counter == lastAck - windowBase) {
+                // SLIDE LOGIC
+                if (counter == lastAck - windowBase + 1) {
+                    int amount = lastAck - windowBase + 1;
                     windowBase = lastAck + 1;
                     lastAck = -1;
-                    sendWindow();
+                    counter = 0;
+                    sendWindow(amount);
                 }
             }
         }
     }
 
-    public void sendWindow() {
-        for (int i = windowBase; i < windowBase + N && i < noOfPackets; i++) {
-            if (packets[i] == null) {
-                packets[i] = new Packet(i + 1, socket, HOSTNAME, port, fileData, timeout);
-                packets[i].start();
-            }
+    public void sendWindow(int amount) {
+        for (int i = 0; i < amount && nextSeqNo - 1 < packets.length; i++) {
+            packets[nextSeqNo - 1] = new Packet(nextSeqNo, socket, HOSTNAME, port, fileData, timeout);
+            packets[nextSeqNo - 1].start();
+            nextSeqNo++;
         }
     }
 
